@@ -1,0 +1,459 @@
+---
+title: "Scraping Newspapers"
+author: "Malte Reichelt"
+format: html
+editor: visual
+editor_options: 
+  chunk_output_type: console
+---
+
+## Scraping Newspapers
+
+### Useful pages
+
+shadowr: https://cran.r-project.org/web/packages/shadowr/shadowr.pdf
+
+### 1) Load relevant packages
+
+Note that you will need the newest version of RStudio and Java!
+
+Before we start, make sure that you have the following packages installed:
+
+```{r}
+install.packages("httr")
+install.packages("jsonlite")
+install.packages("tidyverse")
+install.packages("rvest")
+install.packages("xml2")
+install.packages("DescTools")
+install.packages("RSelenium")
+install.packages("RTools")
+install.packages("readxl")
+install.packages("writexl")
+install.packages("openxlsx") 
+install.packages("shadowr")
+install.packages("netstat")     # Retrieves Network Statistics Including Available TCP Ports, required for webscarping and in particular the package RSelenium
+install.packages("wdman")       # wdman (Webdriver Manager) is an R package that allows the user to manage the downloading/running of third party binaries relating to the webdriver/selenium projects.
+```
+
+Next, we will load the packages into your R workspace. To make API requests in R, we need to bring in some libraries.
+
+```{r}
+library(httr)
+library(jsonlite)
+library(tidyverse)
+library(knitr)
+library(rvest)
+library(dplyr)
+library(stringr)
+library(xml2)
+library(DescTools)
+library(RSelenium)
+library(lubridate)
+library(readxl)
+library(writexl)
+library(openxlsx)
+library(shadowr)
+library(wdman)
+
+```
+
+### 2) Open Archive remotely and entering login information
+
+First, we need to use the free_port function from netstat.
+
+| Selenium Server is a component of the Selenium WebDriver architecture. It acts as a middleman between your automation script and the web browser. Selenium Server listens on a specific port for commands from your script and communicates with the WebDriver and the browser. This port needs to be specified so that your script knows where to send its commands.
+| 
+| **`free_port()`** is a function from the **`netstat`** package. When called, it attempts to find an available (free) network port on your system.
+| 
+| The result of **`free_port()`** is then assigned to the variable **`port`**, so you can use the assigned port number in your code.
+| 
+| In the context of RSelenium, using the **`free_port()`** function may be necessary to dynamically allocate an available port for the Selenium Server to use. RSelenium is an R interface to Selenium, a tool commonly used for automating web browsers.
+| 
+| Some RSelenium functions, like **`rsDriver()`**, allow you to specify a port number. If you want to dynamically allocate a port instead of hardcoding it, you can use **`free_port()`** to find an available port.
+
+Second, we need to assign an RSelenium Driver, either using Firefox or Chrome
+
+This will open a browser remotely
+
+```{r}
+# Clear objects from workspace
+rm(list = ls())
+
+# Set file path for download directory
+file_path <-  "C:/Users/oz92ufeg/Documents/vacany ads/NWZ/"
+
+
+# Function to check for new files in the folder
+check_for_new_pdf <- function(previous_files) {
+  current_files <- list.files(file_path, full.names = TRUE, pattern = "\\.pdf$", ignore.case = TRUE)
+  new_files <- setdiff(current_files, previous_files)
+  if (length(new_files) > 0) {
+    # Filter out files with size greater than zero bytes
+  Sys.sleep(2) # give the page time to fully load
+  new_files <- new_files[file.size(new_files) > 0]
+    if (length(new_files) > 0) {
+      # Get the latest PDF file based on file modification time
+      latest_pdf <- new_files[which.max(file.info(new_files)$mtime)]
+      return(latest_pdf)
+    }
+  }
+  return(NULL)
+}  
+  
+
+# Function to check if the last PDF saved was more than 5 minutes ago
+check_last_pdf_time <- function(previous_files, pdf_saved, remDr) {
+  if (pdf_saved) {  # Check if PDFs have been saved in this session
+    # Get the modification times of all PDF files
+    pdf_mod_times <- file.info(previous_files)$mtime
+    if (length(pdf_mod_times) > 0) {  # Ensure there are modification times
+      # Find the maximum modification time
+      last_pdf_saved <- max(pdf_mod_times)
+      # Calculate the time elapsed since the last PDF was saved
+      time_elapsed <- difftime(Sys.time(), last_pdf_saved, units = "secs")
+      if (time_elapsed > 300) {  # 300 seconds for testing purpose
+        close_browser_and_restart_chunk(remDr)  # Close browser and restart the code
+      }
+    }
+  }
+}
+
+
+# Function to close Firefox browser and restart the chunk of code
+close_browser_and_restart_chunk <- function(remDr) {
+  # Close the browser window
+  remDr$close()
+  # Call the function to run the chunk of code
+  run_code_chunk()
+}
+
+
+# Define a function for the chunk of code you want to restart
+# run_code_chunk <- function() {
+
+
+# Initialize a variable to track whether PDFs have been saved in this session
+pdf_saved <- FALSE
+
+
+# Read in dates from Excel list
+excel_file_path <- "C:/Users/oz92ufeg/Friedrich-Alexander Universität Erlangen-Nürnberg/GenDiT - Gender in the Age of Digitization and Technological Change - GenDiT/Data/Zeitintervalle.xlsx" 
+
+
+excel_data <- read_xlsx(excel_file_path)
+column_start  <- excel_data$start
+column_end    <- excel_data$end
+column_start
+column_end 
+
+
+
+
+# selenium(retcommand = T)
+
+# Select an empty port on your machine
+port <- netstat::free_port(random = TRUE)
+
+# # Set up and launch a Selenium WebDriver
+driver <- rsDriver(browser=c("chrome")
+             ,chromever= "latest"
+             ,version="latest"
+             ,check = F
+             ,port = port
+             ,verbose = T
+             )
+
+
+# Extract the "client" component from the driver list. It is similar to using $ to access a named component of a list or an environment. The result of this expression (driver[["client"]]) is an object representing the connection to the Selenium server.
+  remDr <- driver[["client"]]
+
+
+
+# Open the browser, you selected in the rsDriver function
+# remDr$open()
+
+
+
+# Navigate to the PZ website (Check the open browser page)
+  myurl <- remDr$navigate("https://zeitungskiosk.nwzonline.de/titles/nwz/8389/searchs")
+  remDr$navigate(myurl)
+  Sys.sleep(5) # give the page time to fully load
+
+  
+### ATTENTION, PAGE IS STILL IN SHADOW ROOT ###
+  
+  
+  
+# Accept data protection note
+  shadow_rd <- shadow(remDr) 
+  element <- find_element(shadow_rd, 'button[class="primary"]')[[1]]
+  element$getElementText()
+  element$clickElement()
+
+
+
+# navigate to the button "Menü" 
+  element <- find_element(shadow_rd, '#hamburger')[[1]]
+  element$getElementText()
+  element$clickElement() 
+  
+
+# navigate to the button "Suche" 
+  element <- find_element(shadow_rd, '#region > section > main > button:nth-child(4)')[[1]]
+  element$getElementText()
+  element$clickElement()   
+  
+  
+  
+# Initialize the list of previous files
+previous_files <- list.files(file_path, full.names = TRUE)
+
+
+
+
+######################################### 
+
+# 1 loop
+
+######################################### 
+
+    # Loop through the original strings
+  for (start in column_start) {
+    start
+    start_dt <- as.Date(start, format = "%d.%m.%Y")
+    start_dt
+    end_dt <- start_dt + months(1)
+    end_dt
+    end <- format(end_dt, "%d.%m.%Y")
+    end
+
+    
+# Check if the last PDF saved was more than 5 minutes ago
+  check_last_pdf_time(previous_files, pdf_saved, remDr)
+
+
+  
+# Click into the search bar and search for keyword "Stellenan"
+searchbar <- find_element(shadow_rd, '#search')[[1]]
+remDr$executeScript("arguments[0].value = '';", list(searchbar))
+searchbar$sendKeysToElement(list("Stellenan"))
+  
+  
+  
+# Tick "Alle Regionen durchsuchen"
+  boxtick <- find_element(shadow_rd, '.search-global > label:nth-child(2)')[[1]] 
+  boxtick$clickElement()
+  
+  
+    # Click in the FIRST calendar search bar 
+      button_element_start <- find_element(shadow_rd, '#date')[[1]]
+      button_element_start$clickElement()  
+    
+      
+    # delete the year default 
+      remDr$executeScript("arguments[0].value = '';", list(button_element_start))
+    
+      Sys.sleep(2) # give the page time to fully load
+      
+      print(start)
+      
+      button_element_start$sendKeysToElement(list(start))
+      
+      button_element_start$sendKeysToElement(list(key = "enter"))
+      
+      Sys.sleep(2) # give the page time to fully load
+    
+    
+    # Click in the SECOND calendar search bar 
+      button_element_end <- find_element(shadow_rd, '.search-until #date')[[1]] 
+      button_element_end$clickElement()
+  
+    
+    # delete the year default 
+      remDr$executeScript("arguments[0].value = '';", list(button_element_end))
+
+      Sys.sleep(2) # give the page time to fully load
+      
+      print(end)
+      
+      button_element_end$sendKeysToElement(list(end))
+      
+      button_element_end$sendKeysToElement(list(key = "enter"))
+      
+      Sys.sleep(2) # give the page time to fully load
+
+  
+# Tick "Suchen"
+  search <- find_element(shadow_rd, '#btn_search')[[1]] 
+  search$clickElement() 
+  
+  Sys.sleep(10) # give the page time to fully load
+
+
+    button_element <- remDr$findElement(using = 'xpath', value = '/html/body/epaper-application/div/view-search//main/search-results/button[1]')
+    button_element$clickElement()
+    
+
+search <- find_element(shadow_rd, 'main > search-results > button:nth-child(1)')[[1]] 
+search$clickElement() 
+
+
+element <- find_element(shadow_rd, 'main > search-results > button')[[1]]
+element$getElementText()
+element$clickElement()   
+  
+  
+# login
+  email <- find_element(shadow_rd, '#_id_1714041200872_101')[[1]] 
+  email$sendKeysToElement(list("wiso-css@fau.de"))
+  passwd <- find_element(shadow_rd, '#input_password ')[[1]]   
+  passwd$sendKeysToElement(list("gendit2025"))
+  search <- find_element(shadow_rd, '.login-button')[[1]] 
+  search$clickElement() 
+  
+  }  
+
+
+    
+  
+    # Click on cover if cover is present
+    # Check if the element with class ".cover" is present
+    cover_element <- tryCatch(
+      {remDr$findElement(using = "css", value = ".cover")},
+      error = function(e) {NULL}
+    )
+    
+    # If the element is present, click on it
+    if (!is.null(cover_element)) {
+      cover_element$clickElement()
+    }
+    
+    Sys.sleep(2) # give the page time to fully load
+    
+    # Click Download button
+    button_element <- remDr$findElement(using = 'xpath', value = '/html/body/div/div/main/ul/li[7]/button/i')
+    button_element$clickElement()
+    
+    button_element <- remDr$findElement(using = 'xpath', value = '/html/body/div/div[2]/div/div[1]/button[1]')
+    button_element$clickElement()
+    
+    button_element <- remDr$findElement(using = 'xpath', value = '/html/body/div/div[2]/div/div[2]/div/button[2]')
+    button_element$clickElement()
+    
+          # Wait until popup disappears, which means that download has started 
+          elementExists <- function() {
+            tryCatch(
+              {
+                webElem <- remDr$findElement(using = "xpath", value = "/html/body/div/div[2]/div/div[2]/div/button[1]")
+                return(FALSE)  # Element exists, return FALSE
+              },
+              error = function(e) {
+                return(TRUE)  # Element does not exist, return TRUE
+              }
+            )
+          }
+    
+    
+          
+    # Function to wait until the element disappears 
+          
+          while (!elementExists()) {
+        Sys.sleep(1)  # Wait for 1 second before checking again
+        check_last_pdf_time(previous_files, pdf_saved, remDr)
+              }
+    
+    
+    # Restart download if file wasn't downloaded
+    # Check if download has started
+    download_started <- FALSE
+    while (!download_started) {
+      Sys.sleep(2)  # Wait for 2 seconds before checking again
+      current_files_check <- list.files(file_path, full.names = TRUE, ignore.case = TRUE)
+      new_files_check <- setdiff(current_files_check, previous_files)
+      if (length(new_files_check) == 0) {
+          Sys.sleep(2) # give the page time to fully load
+          
+          # Click Download button
+          button_element <- remDr$findElement(using = 'xpath', value = '/html/body/div/div/main/ul/li[7]/button/i')
+          button_element$clickElement()
+          
+          button_element <- remDr$findElement(using = 'xpath', value = '/html/body/div/div[2]/div/div[1]/button[1]')
+          button_element$clickElement()
+          
+          button_element <- remDr$findElement(using = 'xpath', value = '/html/body/div/div[2]/div/div[2]/div/button[2]')
+          button_element$clickElement()
+          
+          # Wait until popup disappears, which means that download has started 
+          elementExists <- function() {
+            tryCatch(
+              {
+                webElem <- remDr$findElement(using = "xpath", value = "/html/body/div/div[2]/div/div[2]/div/button[1]")
+                return(FALSE)  # Element exists, return FALSE
+              },
+              error = function(e) {
+                return(TRUE)  # Element does not exist, return TRUE
+              }
+            )
+          }
+          
+          # Wait until the element disappears
+          while (!elementExists()) {
+            Sys.sleep(1)  # Wait for 1 second before checking again
+          check_last_pdf_time(previous_files, pdf_saved, remDr)
+          }
+      }
+        if (length(new_files_check) > 0) {
+          download_started <- TRUE
+        }
+      }
+    
+    
+    # Rename the downloaded file to the desired filename
+    
+      # Wait until a new file is added to the folder
+      new_file <- NULL
+      while (is.null(new_file)) {
+        Sys.sleep(1)
+        new_file <- check_for_new_pdf(previous_files)
+      }
+      
+        Sys.sleep(4)  # Wait
+    
+    
+      # Rename the downloaded file to the desired filename
+      if (!is.null(new_file)) {
+        new_filename <- paste0("C:/Users/oz92ufeg/Downloads/pz_", date, ".pdf")
+        file.rename(from = new_file, to = new_filename)
+        
+         # Update the list of previous files
+      previous_files <- list.files(file_path, full.names = TRUE)
+      
+      }
+    
+       
+         # Delete date from Excel sheet
+        data <- read_excel("C:/Users/oz92ufeg/Friedrich-Alexander Universität Erlangen-Nürnberg/GenDiT - Gender in the Age of Digitization and Technological Change - GenDiT/Data/dates_23_24.xlsx")
+        
+        row_index <- which(data[, 1] == date)
+        
+        data <- data[-row_index, ]
+        
+        write_xlsx(data, "C:/Users/oz92ufeg/Friedrich-Alexander Universität Erlangen-Nürnberg/GenDiT - Gender in the Age of Digitization and Technological Change - GenDiT/Data/dates_23_24.xlsx")
+        
+        
+        # Indicate that PDF has been saved
+       
+         pdf_saved <- TRUE
+
+       }
+
+  }
+
+
+
+run_code_chunk()
+
+### CLOSE WINDOW
+remDr$closeWindow()
+```
