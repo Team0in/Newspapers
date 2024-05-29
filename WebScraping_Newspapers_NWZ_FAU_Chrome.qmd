@@ -6,7 +6,7 @@ editor: visual
 editor_options: 
   chunk_output_type: console
 execute:
-  cache: true
+  cache: true		 
 ---
 
 ## Scraping Newspapers
@@ -21,42 +21,72 @@ Note that you will need the newest version of RStudio and Java!
 
 Before we start, make sure that you have the following packages installed:
 
-```{r}
-install.packages("httr")
-install.packages("jsonlite")
-install.packages("tidyverse")
-install.packages("rvest")
-install.packages("xml2")
-install.packages("DescTools")
-install.packages("RSelenium")
-install.packages("RTools")
-install.packages("readxl")
-install.packages("writexl")
-install.packages("openxlsx") 
-install.packages("shadowr")
-install.packages("netstat")     # Retrieves Network Statistics Including Available TCP Ports, required for webscarping and in particular the package RSelenium
-install.packages("wdman")       # wdman (Webdriver Manager) is an R package that allows the user to manage the downloading/running of third party binaries relating to the webdriver/selenium projects.
+```{# {r}
+# install.packages("httr")
+# install.packages("jsonlite")
+# install.packages("tidyverse")
+# install.packages("rvest")
+# install.packages("xml2")
+# install.packages("DescTools")
+# install.packages("RSelenium")
+# install.packages("RTools")
+# install.packages("readxl")
+# install.packages("writexl")
+# install.packages("openxlsx") 
+# install.packages("shadowr")
+# install.packages("binman")
+# install.packages("netstat")     # Retrieves Network Statistics Including Available TCP Ports, required for webscarping and in particular the package RSelenium
+# install.packages("wdman")       # wdman (Webdriver Manager) is an R package that allows the user to manage the downloading/running of third party binaries relating to the webdriver/selenium projects.
+# 
+# library(httr)
+# library(jsonlite)
+# library(tidyverse)
+# library(knitr)
+# library(rvest)
+# library(dplyr)
+# library(stringr)
+# library(xml2)
+# library(DescTools)
+# library(RSelenium)
+# library(lubridate)
+# library(readxl)
+# library(writexl)
+# library(openxlsx)
+# library(shadowr)
+# library(wdman)
+# library(binman)
+
 ```
 
 Next, we will load the packages into your R workspace. To make API requests in R, we need to bring in some libraries.
 
 ```{r}
-library(httr)
-library(jsonlite)
-library(tidyverse)
-library(knitr)
-library(rvest)
-library(dplyr)
-library(stringr)
-library(xml2)
-library(DescTools)
-library(RSelenium)
-library(lubridate)
-library(readxl)
-library(writexl)
-library(openxlsx)
-library(shadowr)
-library(wdman)
+# Install pacman if it's not already installed
+if (!requireNamespace("pacman", quietly = TRUE)) {
+  install.packages("pacman")
+}
+
+# Load pacman
+library(pacman)
+
+# Use pacman to install (if necessary) and load the required packages
+p_load(
+  httr, 
+  jsonlite, 
+  tidyverse, 
+  rvest, 
+  xml2, 
+  DescTools, 
+  RSelenium, 
+  RTools, 
+  readxl, 
+  writexl, 
+  openxlsx, 
+  shadowr, 
+  binman, 
+  netstat, 
+  wdman
+)
 
 ```
 
@@ -79,6 +109,14 @@ Second, we need to assign an RSelenium Driver, either using Firefox or Chrome
 This will open a browser remotely
 
 ```{r}
+
+
+######################################################################
+
+#  Defining functions and paths
+
+######################################################################
+
 # Clear objects from workspace
 rm(list = ls())
 
@@ -89,30 +127,80 @@ username
 
 
 # Check the username and perform actions accordingly
+
   if (username == "maltereichelt") {
+    
+    
     data_path <- "/Users/maltereichelt/Library/CloudStorage/OneDrive-Friedrich-AlexanderUniversitätErlangen-Nürnberg/GenDiT/Data/"
+    download_folder <- file.path(data_path, "NWZ2/")
+    file_path <- file.path(data_path, "NWZ2/") 
     print("Welcome, maltereichelt!")
+	
+	
   } else if (username == "ol82efov") {
-    setwd("/Users/ol82efov/Library/CloudStorage/OneDrive-Friedrich-AlexanderUniversitätErlangen-Nürnberg/GenDiT/Data/")
-        data_path <- "/Users/ol82efov/Library/CloudStorage/OneDrive-Friedrich-AlexanderUniversitätErlangen-Nürnberg/GenDiT/Data/"
-    print("Hello, ol82efov!")
+    
+    
+      setwd("/Users/ol82efov/Library/CloudStorage/OneDrive-Friedrich-AlexanderUniversitätErlangen-Nürnberg/GenDiT/Data/")
+    	data_path <- "/Users/ol82efov/Library/CloudStorage/OneDrive-Friedrich-AlexanderUniversitätErlangen-Nürnberg/GenDiT/Data/mr_data"
+    	download_folder <- file.path(data_path, "NWZ2/")
+    	file_path <- file.path(data_path, "NWZ2/")											  
+    	print("Welcome, ol82efov!")
+	
+	
   } else if (username == "oz92ufeg") {
-    setwd("C:/Users/oz92ufeg/Friedrich-Alexander Universität Erlangen-Nürnberg/GenDiT - Gender in the Age of Digitization and Technological Change - GenDiT/Data/")
-    data_path <- "C:/Users/oz92ufeg/Friedrich-Alexander Universität Erlangen-Nürnberg/GenDiT - Gender in the Age of Digitization and Technological Change - GenDiT/Data/"
-    download_folder <- "C:\\Users\\oz92ufeg\\Friedrich-Alexander Universität Erlangen-Nürnberg\\GenDiT - Gender in the Age of Digitization and Technological Change - GenDiT\\Data\\Vacancy ads\\archival_data\\NWZ"
-    print("Hello, oz92ufeg!")
+    
+    
+      setwd("C:/Users/oz92ufeg/Friedrich-Alexander Universität Erlangen-Nürnberg/GenDiT - Gender in the Age of Digitization and Technological Change - GenDiT/Data/")
+      data_path <- "C:/Users/oz92ufeg/Friedrich-Alexander Universität Erlangen-Nürnberg/GenDiT - Gender in the Age of Digitization and Technological Change - GenDiT/Data/"
+      download_folder <- "C:\\Users\\oz92ufeg\\Friedrich-Alexander Universität Erlangen-Nürnberg\\GenDiT - Gender in the Age of Digitization and Technological Change - GenDiT\\Data\\Vacancy ads\\archival_data\\NWZ"
+    	file_path <- file.path(data_path, "Vacancy ads/archival_data/NWZ//")																									   
+      print("Welcome, oz92ufeg!")
+	
+	
   } else if (username == "ba3ec1") {
-    data_path <- "C:/Users/ba3ec1/Friedrich-Alexander Universität Erlangen-Nürnberg/GenDiT - Gender in the Age of Digitization and Technological Change - GenDiT/Data"
-    download_folder <- "C:\\Users\\ba3ec1\\Friedrich-Alexander Universität Erlangen-Nürnberg\\GenDiT - Gender in the Age of Digitization and Technological Change - GenDiT\\Data\\Vacancy ads\\archival_data\\NWZ"
-    print("Hello, oz92ufeg!")
+    
+    
+      setwd("C:/Users/ba3ec1/Documents/vacany ads/")
+      data_path <- "C:/Users/ba3ec1/Documents/vacany ads/"
+    	download_folder <- "C:\\Users\\ba3ec1\\Documents\\vacany ads\\NWZ"
+    	file_path <- file.path(data_path, "NWZ//")
+      print("Welcome, oz92ufeg!")
+	
+	
+  } else if (username == "elena") {
+    
+    
+      setwd("C:/Users/elena/OneDrive - Friedrich-Alexander Universität Erlangen-Nürnberg/GenDiT/Data")
+      data_path <- "C:/Users/elena/OneDrive - Friedrich-Alexander Universität Erlangen-Nürnberg/GenDiT/Data"
+      download_folder <- "C:\\Users\\elena\\OneDrive - Friedrich-Alexander Universität Erlangen-Nürnberg\\GenDiT\\Data\\Vacancy ads\\archival_data\\NWZ"
+    	file_path <- file.path(data_path, "Vacancy ads/archival_data/NWZ//")																									   
+      print("Welcome, elena!")
+	
+	
+  } else if (username == "ba2yr2") {
+    
+    
+      setwd("C:/Users/ba2yr2/Documents/vacany ads/")
+      data_path <- "C:/Users/ba2yr2/Documents/vacany ads/"
+    	download_folder <- "C:\\Users\\ba2yr2\\Documents\\vacany ads\\NWZ"
+    	file_path <- file.path(data_path, "NWZ//")
+      print("Welcome, ba2yr2!")
+	
+	
   } else {
+    
+    
     # Default action for other users
     print("Unknown user.")
+	
+	
   }
 
 
-file_path <- file.path(data_path, "Vacancy ads/archival_data/NWZ//")
+getwd()
 file_path
+data_path
+
 
 # Function to check for new files in the folder
 check_for_new_pdf <- function(previous_files) {
@@ -158,6 +246,11 @@ close_browser_and_restart_chunk <- function(remDr) {
   run_code_chunk()
 }
 
+```
+
+### Defining run_code_chunk
+
+```{r}
 
 # Define a function for the chunk of code you want to restart
   run_code_chunk <- function() {
@@ -204,7 +297,17 @@ driver <- rsDriver(browser=c("chrome")
 
 # Extract the "client" component from the driver list. It is similar to using $ to access a named component of a list or an environment. The result of this expression (driver[["client"]]) is an object representing the connection to the Selenium server.
   remDr <- driver[["client"]]
-  remDr$maxWindowSize()
+  
+    if (username == "ba3ec1") {
+	remDr$maxWindowSize()
+  
+  } else if (username == "ba2yr2") {
+	  remDr$maxWindowSize()
+	
+  } else if (username == "oz92ufeg") {
+	  remDr$maxWindowSize()
+	
+  } 
 
 
 # Open the browser, you selected in the rsDriver function
@@ -217,6 +320,7 @@ driver <- rsDriver(browser=c("chrome")
   remDr$navigate(myurl)
   Sys.sleep(4) # give the page time to fully load
 
+  
   
 ### ATTENTION, PAGE IS STILL IN SHADOW ROOT ###
   
@@ -244,7 +348,7 @@ driver <- rsDriver(browser=c("chrome")
   
   
 # Initialize the list of previous files
-previous_files <- list.files(file_path, full.names = TRUE)
+  previous_files <- list.files(file_path, full.names = TRUE)
 
 
 
@@ -255,8 +359,22 @@ previous_files <- list.files(file_path, full.names = TRUE)
 
 ######################################### 
 
-    # Loop through the original strings
-  keywords <- c("stellenmarkt", "Stellenan", "nwzjobs.de")
+# Loop through the original strings
+  if (username == "ba3ec1") {
+	  keywords <- c("nwzjobs.de", "stellenmarkt", "Stellenan")
+  
+  } else if (username == "ba2yr2") {
+	  keywords <- c( "Stellenan", "nwzjobs.de", "stellenmarkt")
+	
+  } else if (username == "oz92ufeg") {
+	  keywords <- c("stellenmarkt", "nwzjobs.de", "Stellenan")
+	
+  } else {
+		keywords <- c("stellenmarkt", "nwzjobs.de", "Stellenan")
+
+  }
+  
+  
   for (keyword in keywords) {
     for (start in column_start) {
       start
@@ -352,13 +470,13 @@ previous_files <- list.files(file_path, full.names = TRUE)
       Sys.sleep(1) # Adjust the sleep duration as needed
     }
     
-    print("im done buffering")
+    print("Finished buffering")
 
 
 
 # Execute everything as long as results are present (class=no_results not present)
 
-  # Check if the elements are present using JavaScript
+  # Check if the elements from the search request are present using JavaScript
     js_code <- 'return document.querySelector("body > epaper-application > div > view-search").shadowRoot.querySelector("main > search-results").shadowRoot.querySelector("#search-content > div") !== null;'
   element_present <- remDr$executeScript(js_code)
 
@@ -392,6 +510,7 @@ Sys.sleep((2)) # give the page time to fully load
       while (!check_search_results_match(remDr)) {
         remDr$executeScript('document.querySelector("body > epaper-application > div > view-search").shadowRoot.querySelector("main > search-results").scrollTop += 1000;')
         Sys.sleep(1)  # Adjust sleep time as needed
+		check_last_pdf_time(previous_files, pdf_saved, remDr)													 
       }
       
       
@@ -403,12 +522,12 @@ Sys.sleep((2)) # give the page time to fully load
     
     # Scroll back on top of the page
       remDr$executeScript('document.querySelector("body > epaper-application > div > view-search").shadowRoot.querySelector("main > search-results").scrollTop = 0;')
-    print("I scrolled back on top of the page.")
+	print("I scrolled back on top of the page.")
       
     
     # Get the total number of children (search results)
       total_children <- remDr$executeScript('return document.querySelector("body > epaper-application > div > view-search").shadowRoot.querySelector("main > search-results").querySelectorAll("button").length;')
-      print("I have captured all children.")
+    print("I have captured all children.")
       
       
       # Loop through each child (search result)
@@ -423,16 +542,17 @@ Sys.sleep((2)) # give the page time to fully load
   
         # Click on the button within the Shadow DOM
           remDr$executeScript(sprintf('document.querySelector("body > epaper-application > div > view-search").shadowRoot.querySelector("main > search-results > button:nth-child(%d)").click();', i))
-          print("I have started the loop on the children.")
+          print("Loop on a child.")
+          print(Sys.time())
           Sys.sleep(2)  # Adjust sleep time as needed
-        
-          
-          # Check if the login dialog window is present
+        # Check if the login dialog window is present
           login_dialog_present <- remDr$executeScript('return document.querySelector("#login-dialog") !== null;')
+      
     
+              
           # login
             if (login_dialog_present[[1]]) {
-              print("Login window is present.")
+              
               passwd <- find_element(shadow_rd, '#input_password ')[[1]]
               remDr$executeScript("arguments[0].value = '';", list(passwd))
               passwd$sendKeysToElement(list("gendit2025"))
@@ -441,18 +561,45 @@ Sys.sleep((2)) # give the page time to fully load
               search <- find_element(shadow_rd, '.login-button')[[1]]
               search$clickElement()
               Sys.sleep(3)  # Adjust sleep time as needed
-            } else {
-              print("Login window is not present.")
-              Sys.sleep(3)
-                   }
+            } 
     
           
-              
+   # Wait until popup disappears, which means that download has started
+searchresultExists <- function() {
+  tryCatch(
+    {
+      # Use executeScript to run JavaScript and find the element within shadow DOM
+      webElem <- remDr$executeScript(
+        'document.querySelector("body > epaper-application > div > view-publication").shadowRoot.querySelector("div > book-cover > book-navigation").shadowRoot.querySelector("nav")'
+      )
+      if (!is.null(webElem)) {
+        return(TRUE)  # Element exists, return TRUE
+      } else {
+        return(FALSE)  # Element does not exist, return FALSE
+      }
+    },
+    error = function(e) {
+      return(FALSE)  # Handle any errors by returning FALSE
+    }
+  )
+}
+
+    
+  # Wait until the element disappears
+    while (!searchresultExists()) {
+      Sys.sleep(1)  # Wait for 1 second before checking again
+      check_last_pdf_time(previous_files, pdf_saved, remDr)
+    }
+
+
+
           
           print <- find_element(shadow_rd, '#reader > main > spread-view-menu-print > button')[[1]]
           print$clickElement() 
           print("I have clicked on the page selection button.")
-    
+          Sys.time()
+		  
+		  
     # Solution taken from: https://github.com/ropensci/RSelenium/issues/143
           # Select left and right pages
     data_page <- remDr$executeScript("
@@ -491,9 +638,11 @@ if (elementInShadowRoot) {
           page <- remDr$executeScript("return document.querySelector('body > dialog-print').shadowRoot.querySelector('#printNumber').innerText")
           page <- as.character(page)
           print$clickElement()
+          print("I have executed a download.")
+          Sys.time()		
           Sys.sleep(3)
           
-###
+
              # Wait until popup disappears, which means that download has started 
               elementExists <- function() {
                 tryCatch(
@@ -509,26 +658,25 @@ if (elementInShadowRoot) {
     
     
           
-    # Function to wait until the element disappears 
-          
+    # Function to wait until the element disappears
           while (!elementExists()) {
         Sys.sleep(1)  # Wait for 1 second before checking again
-        check_last_pdf_time(previous_files, pdf_saved, remote_driver)
+        check_last_pdf_time(previous_files, pdf_saved, remDr)
           }
           
-########
+
           
           
           
-        # Restart download if file wasn't downloaded
-        # Check if download has started
+    # Restart download if file wasn't downloaded
+      # Check if download has started
         download_started <- FALSE
         while (!download_started) {
-          Sys.sleep(2)  # Wait for 2 seconds before checking again
+          Sys.sleep(3)  # Wait for 3 seconds before checking again
           current_files_check <- list.files(file_path, full.names = TRUE, ignore.case = TRUE)
           new_files_check <- setdiff(current_files_check, previous_files)
           if (length(new_files_check) == 0) {
-              Sys.sleep(2) # give the page time to fully load
+              Sys.sleep(3) # give the page time to fully load
               
            
           print <- find_element(shadow_rd, '#reader > main > spread-view-menu-print > button')[[1]]
@@ -606,19 +754,19 @@ if (elementInShadowRoot) {
             file_name
             
                  
-          # Rename the downloaded file to the desired filename
-            if (!is.null(new_file)) {
-              new_filename <- paste0(file_path, file_name, page, ".pdf")
-              file.rename(from = new_file, to = new_filename)
-              
-             # Update the list of previous files
-             previous_files <- list.files(file_path, full.names = TRUE)
+        # Rename the downloaded file to the desired filename
+          if (!is.null(new_file)) {
+            new_filename <- paste0(file_path, file_name, page, ".pdf")
+            file.rename(from = new_file, to = new_filename)
             
-            }
+           # Update the list of previous files
+           previous_files <- list.files(file_path, full.names = TRUE)
+          
+          }
         
-            Sys.sleep(2)  # Wait
+          Sys.sleep(3)  # Wait
             
-         # Indicate that PDF has been saved
+        # Indicate that PDF has been saved
          pdf_saved <- TRUE   
          
          
@@ -633,158 +781,46 @@ if (elementInShadowRoot) {
           button_element <- find_element(shadow_rd, '#reader > main > button:nth-child(3) > div')[[1]]
           button_element$clickElement() 
 
-         
+          
+ 
+          
+          
       } # Loop through each child (search result)
         
      } # Loop that checks if results are present
-    
-
-        # Delete date from Excel sheet
-          data <- excel_data
-          row_index <- which(data[, 1] == start)
-          data <- data[-row_index, ]
-          write_xlsx(data, excel_file_path)
-    
-          
+	 
+	 
+          # Delete date from Excel sheet
+            data <- excel_data
+            row_index <- which(data[, 1] == start)
+            data <- data[-row_index, ]
+            write_xlsx(data, excel_file_path)
+		        excel_data <- data 
+		  
     } # Loop through the dates
-
+    
   } # Loop through keywords
 
 } # run_code_chunk
     
   
 
-run_code_chunk()
 
 
-### CLOSE WINDOW
-remDr$closeWindow()
-```
+  success <- FALSE
+  while (!success) {
+    tryCatch({
+    run_code_chunk()
+      success <- TRUE
+    }, error = function(e) {
+      print(paste("An error occurred:", e$message))
+      print("Restarting the script...")
+      # Add any cleanup code if necessary before retrying
+  })
+  }
 
-```{r}
-
-
-# OLD CODE 
-
-  #######
-        # Restart download if file wasn't downloaded
-        # Check if download has started
-        download_started <- FALSE
-        while (!download_started) {
-          Sys.sleep(2)  # Wait for 2 seconds before checking again
-          current_files_check <- list.files(file_path, full.names = TRUE, ignore.case = TRUE)
-          new_files_check <- setdiff(current_files_check, previous_files)
-          if (length(new_files_check) == 0) {
-              Sys.sleep(2) # give the page time to fully load
-              
-           
-          print <- find_element(shadow_rd, '#reader > main > spread-view-menu-print > button')[[1]]
-          print$clickElement() 
-    
-    
-    # Solution taken from: https://github.com/ropensci/RSelenium/issues/143
-          # Select left and right pages
-    data_page <- remDr$executeScript("
-        // Select the element within the shadow root
-        var elementInShadowRoot = document.querySelector('body > dialog-print').shadowRoot.querySelector('#shareContent > div > div img.printMe');
-        
-        // Extract the value of the data-page attribute
-        var dataPageValue = elementInShadowRoot.getAttribute('data-page');
-        
-        return dataPageValue;
-    ")
-      
-        data_page_click <- as.numeric(data_page[1])+1
-        
-    remDr$executeScript(paste0("
-        // Define the value stored in data_page_click
-        var data_page_click = '", data_page_click, "';
-        
-        // Select the element within the shadow root based on data-page attribute
-        var elementInShadowRoot = document.querySelector('body > dialog-print').shadowRoot.querySelector('#shareContent > div > div img[data-page=\"' + data_page_click + '\"]');
-        
-        // Click on the element
-        elementInShadowRoot.click();
-    "))
-      
-        # download the two adjacent selected pages 
-          print <- find_element(shadow_rd, '#printItems')[[1]]
-          print$clickElement()
-    
-          Sys.sleep(3)
-              
-              # Wait until popup disappears, which means that download has started
-              elementExists <- function() {
-                tryCatch(
-                  {
-                    webElem <- remDr$findElement('document.querySelector("body > dialog-print").shadowRoot.querySelector("div > div") !== null;')
-                    return(FALSE)  # Element exists, return FALSE
-                  },
-                  error = function(e) {
-                    return(TRUE)  # Element does not exist, return TRUE
-                  }
-                )
-              }
-
-              # Wait until the element disappears
-              while (!elementExists()) {
-                Sys.sleep(1)  # Wait for 1 second before checking again
-              check_last_pdf_time(previous_files, pdf_saved, remDr)
-              }
-          }
-            if (length(new_files_check) > 0) {
-              download_started <- TRUE
-            }
-          }
-        
-        
-        # Rename the downloaded file to the desired filename
-        
-          # Wait until a new file is added to the folder
-          new_file <- NULL
-          while (is.null(new_file)) {
-            Sys.sleep(1)
-            new_file <- check_for_new_pdf(previous_files)
-          }
-          
-            Sys.sleep(4)  # Wait
-        
-        
-          # Rename the downloaded file to the desired filename
-          if (!is.null(new_file)) {
-            new_filename <- paste0("C:/Users/oz92ufeg/Friedrich-Alexander Universität Erlangen-Nürnberg/GenDiT - Gender in the Age of Digitization and Technological Change - GenDiT/Data/Vacancy ads/archival_data/NWZ/NWZ_", date, ".pdf")
-            file.rename(from = new_file, to = new_filename)
-            
-             # Update the list of previous files
-          previous_files <- list.files(file_path, full.names = TRUE)
-          
-          }
-        
-           
-             # Delete date from Excel sheet
-            data <- read_excel("C:/Users/oz92ufeg/Friedrich-Alexander Universität Erlangen-Nürnberg/GenDiT - Gender in the Age of Digitization and Technological Change - GenDiT/Data/dates_23_24.xlsx")
-            
-            row_index <- which(data[, 1] == date)
-            
-            data <- data[-row_index, ]
-            
-            write_xlsx(data, "C:/Users/oz92ufeg/Friedrich-Alexander Universität Erlangen-Nürnberg/GenDiT - Gender in the Age of Digitization and Technological Change - GenDiT/Data/dates_23_24.xlsx")
-            
-            
-            # Indicate that PDF has been saved
-           
-             pdf_saved <- TRUE
-    
-           }
-    
-      }
-
-
-
-
-run_code_chunk()
-
-
+  
+  
 ### CLOSE WINDOW
 remDr$closeWindow()
 ```
