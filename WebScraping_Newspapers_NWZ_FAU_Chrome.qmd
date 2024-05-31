@@ -88,6 +88,7 @@ p_load(
   wdman
 )
 
+print("All packages are installed and loaded")
 ```
 
 ### 2) Open Archive remotely and entering login information
